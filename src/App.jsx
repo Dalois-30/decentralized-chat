@@ -43,7 +43,7 @@ const App = () => {
         </>
       <Notification />
     </div>
-  );
+  );// TODO: add login and notification
 };
 
 export default App;
