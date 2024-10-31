@@ -10,12 +10,23 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chainsafe/libp2p-noise": "^16.0.0",
+    "@libp2p/bootstrap": "^11.0.10",
+    "@libp2p/kad-dht": "^14.1.0",
+    "@libp2p/mplex": "^11.0.10",
+    "@libp2p/webrtc-star": "^7.0.0",
+    "@libp2p/websockets": "^9.0.11",
     "emoji-picker-react": "^4.9.2",
+    "ethers": "^6.13.4",
     "firebase": "^10.10.0",
+    "ipfs": "^0.66.1",
+    "ipfs-core": "^0.18.1",
+    "libp2p": "^2.2.1",
+    "orbit-db": "^0.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-toastify": "^10.0.5",
-    "zustand": "^4.5.2"
+    "zustand": "^5.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
