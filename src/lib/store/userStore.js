@@ -1,14 +1,20 @@
 // userStore.js
-import { create } from "zustand";
+import { create as createZustand } from "zustand";
 import OrbitDB from 'orbit-db';
-import IPFS from 'ipfs';
+import { createIPFSNode } from './ipfsConfig';
+import { createOrbitDB } from './orbitDBConfig';
 
 let userDb;
+let ipfsNode;
 
 const initOrbitDB = async () => {
   try {
-    const ipfs = await IPFS.create();
-    const orbitdb = await OrbitDB.createInstance(ipfs);
+    if (!ipfsNode) {
+      ipfsNode = await createIPFSNode();
+      window.ipfs = ipfsNode; // Rendre disponible globalement
+    }
+
+    const orbitdb = await createOrbitDB(ipfsNode);
     userDb = await orbitdb.docstore('users', {
       indexBy: 'id',
       replicate: true
@@ -65,7 +71,7 @@ export const useUserStore = create((set) => ({
 
     try {
       const user = await userDb.get(walletAddress);
-      
+
       if (user && user.length > 0) {
         set({ currentUser: user[0], isLoading: false });
         // Update last seen
