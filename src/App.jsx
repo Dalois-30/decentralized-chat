@@ -15,7 +15,7 @@ const App = () => {
   const { initDB } = useUserStore();
   const { initMessageDB } = useMessageStore();
 
-  // Initialisation du réseau 
+  // Initialisation du réseau P2P
   useEffect(() => {
     const initializeNetwork = async () => {
       try {
