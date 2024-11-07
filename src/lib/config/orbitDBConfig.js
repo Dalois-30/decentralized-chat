@@ -1,18 +1,19 @@
 // orbitDBConfig.js
-import OrbitDB from 'orbit-db';
+import { createOrbitDB } from '@orbitdb/core'
+import { createIPFSNode } from './ipfsConfig';
 
-export const createOrbitDB = async (ipfs) => {
-  const options = {
-    directory: './orbitdb',
-    replicate: true,
-    // Augmenter la limite de réplication pour une meilleure disponibilité
-    replicationConcurrency: 10,
-    // Configuration du canal de synchronisation
-    syncConfig: {
-      syncOnConnect: true,
-      maxPeers: 10,
-    }
-  };
-
-  return await OrbitDB.createInstance(ipfs, options);
-};
+export const createOrbitDBInstance = async () => {
+  const ipfsNode = await createIPFSNode();
+  console.log("Ipfs node created", ipfsNode);
+  try {
+    const orbitdb = await createOrbitDB({
+      ipfs: ipfsNode,
+      // directory: './orbitdb'
+    })
+    
+    return orbitdb
+  } catch (error) {
+    console.error('Erreur lors de la création d\'OrbitDB:', error)
+    throw error
+  }
+}
