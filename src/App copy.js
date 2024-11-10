@@ -1,7 +1,7 @@
 
 // App.js
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
+// import { ethers } from "ethers";
 import { createOrbitDBInstance } from "./lib/config/orbitDBConfig";
 // import { useUserStore } from "./lib/store/userStore";
 // import { useChatStore } from "./lib/store/chatStore";
@@ -20,6 +20,11 @@ const App = () => {
         setNetworkStatus('connecting');
         // Créer l'instance OrbitDB
         const orbit = await createOrbitDBInstance();
+        const db = await orbit.open('my-db');
+        // console.log("DB created", db);
+        console.log('OrbitDB User initialisé avec succès!', db);
+        // await initDB(db);
+        // await initMessageDB(db);
         setOrbitdb(orbit);
         
       } catch (error) {

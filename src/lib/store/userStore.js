@@ -1,109 +1,116 @@
-// // userStore.js
-// import { createIPFSNode } from './ipfsConfig';
-// import { createOrbitDB } from './orbitDBConfig';
+// userStore.js
+import { create as createZustand } from "zustand";
+import { createIPFSNode } from './ipfsConfig';
+import { createOrbitDBInstance } from './orbitDBConfig';
 
-// let userDb;
-// let ipfsNode;
+let userDb;
+let ipfsNode;
 
-// const initOrbitDB = async () => {
-//   try {
-//     if (!ipfsNode) {
-//       ipfsNode = await createIPFSNode();
-//       window.ipfs = ipfsNode; // Rendre disponible globalement
-//     }
+const initOrbitDB = async () => {
+  try {
+    if (!ipfsNode) {
+      ipfsNode = await createIPFSNode();
+      window.ipfs = ipfsNode; // Pour le débogage
+    }
 
-//     const orbitdb = await createOrbitDB(ipfsNode);
-//     userDb = await orbitdb.docstore('users', {
-//       indexBy: 'id',
-//       replicate: true
-//     });
-//     await userDb.load();
-//     return userDb;
-//   } catch (err) {
-//     console.error("Failed to initialize OrbitDB:", err);
-//     throw err;
-//   }
-// };
+    const orbitdb = await createOrbitDBInstance(ipfsNode);
+    
+    // Création d'un docstore avec la nouvelle API
+    userDb = await orbitdb.open('users', {
+      type: 'documents',
+      indexBy: 'id'
+    });
 
-// export const useUserStore = create((set) => ({
-//   currentUser: null,
-//   isLoading: true,
+    console.log('OrbitDB User initialisé avec succès!', userDb);
+    
+    // await userDb.load();
+    return userDb;
+  } catch (err) {
+    console.error("Échec de l'initialisation d'OrbitDB:", err);
+    throw err;
+  }
+};
 
-//   initDB: async () => {
-//     try {
-//       await initOrbitDB();
-//       set({ isLoading: false });
-//     } catch (err) {
-//       console.error("Failed to initialize database:", err);
-//       set({ isLoading: false });
-//     }
-//   },
+export const useUserStore = createZustand((set) => ({
+  currentUser: null,
+  isLoading: true,
 
-//   // Create new user
-//   createUser: async (userData) => {
-//     try {
-//       const user = {
-//         id: userData.walletAddress, // Using wallet address as unique identifier
-//         walletAddress: userData.walletAddress,
-//         email: userData.email,
-//         username: userData.username,
-//         createdAt: Date.now(),
-//         blocked: [],
-//         lastSeen: Date.now(),
-//         status: 'online',
-//         avatar: userData.avatar || null,
-//         conversations: [] // Array of conversation IDs
-//       };
+  initDB: async () => {
+    try {
+      await initOrbitDB();
+      set({ isLoading: false });
+    } catch (err) {
+      console.error("Échec de l'initialisation de la base de données:", err);
+      set({ isLoading: false });
+    }
+  },
 
-//       await userDb.put(user);
-//       set({ currentUser: user, isLoading: false });
-//       return user;
-//     } catch (err) {
-//       console.error("Failed to create user:", err);
-//       throw err;
-//     }
-//   },
+  createUser: async (userData) => {
+    try {
+      const user = {
+        id: userData.walletAddress,
+        walletAddress: userData.walletAddress,
+        email: userData.email,
+        username: userData.username,
+        createdAt: Date.now(),
+        blocked: [],
+        lastSeen: Date.now(),
+        status: 'online',
+        avatar: userData.avatar || null,
+        conversations: []
+      };
 
-//   fetchUserInfo: async (walletAddress) => {
-//     if (!walletAddress) return set({ currentUser: null, isLoading: false });
+      // Utilisation de la nouvelle API pour ajouter un document
+      await userDb.add(user);
+      set({ currentUser: user, isLoading: false });
+      return user;
+    } catch (err) {
+      console.error("Échec de la création de l'utilisateur:", err);
+      throw err;
+    }
+  },
 
-//     try {
-//       const user = await userDb.get(walletAddress);
+  fetchUserInfo: async (walletAddress) => {
+    if (!walletAddress) return set({ currentUser: null, isLoading: false });
 
-//       if (user && user.length > 0) {
-//         set({ currentUser: user[0], isLoading: false });
-//         // Update last seen
-//         await userDb.put({
-//           ...user[0],
-//           lastSeen: Date.now(),
-//           status: 'online'
-//         });
-//       } else {
-//         set({ currentUser: null, isLoading: false });
-//       }
-//     } catch (err) {
-//       console.error("Failed to fetch user:", err);
-//       set({ currentUser: null, isLoading: false });
-//     }
-//   },
+    try {
+      // Utilisation de la nouvelle API pour la recherche
+      const user = await userDb.get(walletAddress);
 
-//   updateUser: async (userData) => {
-//     try {
-//       await userDb.put(userData);
-//       set({ currentUser: userData });
-//     } catch (err) {
-//       console.error("Failed to update user:", err);
-//     }
-//   },
+      if (user) {
+        const updatedUser = {
+          ...user,
+          lastSeen: Date.now(),
+          status: 'online'
+        };
+        await userDb.add(updatedUser);
+        set({ currentUser: updatedUser, isLoading: false });
+      } else {
+        set({ currentUser: null, isLoading: false });
+      }
+    } catch (err) {
+      console.error("Échec de la récupération de l'utilisateur:", err);
+      set({ currentUser: null, isLoading: false });
+    }
+  },
 
-//   setUserOffline: async () => {
-//     const currentUser = useUserStore.getState().currentUser;
-//     if (currentUser) {
-//       await userDb.put({
-//         ...currentUser,
-//         lastSeen: Date.now(),
-//         status: 'offline'
-//       });
-//     }
-//   }
-// }));
+  updateUser: async (userData) => {
+    try {
+      await userDb.add(userData); // Utilisation de add au lieu de put
+      set({ currentUser: userData });
+    } catch (err) {
+      console.error("Échec de la mise à jour de l'utilisateur:", err);
+    }
+  },
+
+  setUserOffline: async () => {
+    const currentUser = useUserStore.getState().currentUser;
+    if (currentUser) {
+      await userDb.add({
+        ...currentUser,
+        lastSeen: Date.now(),
+        status: 'offline'
+      });
+    }
+  }
+}));
